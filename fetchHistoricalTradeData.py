@@ -111,6 +111,7 @@ if __name__ == '__main__':
     # Save some data and begin
     start = time.time()
     total_links = len(links)
+    successes = 0
     sys.stdout.write('Starting downloads w/ {} workers\n'.\
                                         format(args.num_workers))
     for i, link in enumerate(links):
@@ -125,9 +126,14 @@ if __name__ == '__main__':
             pid_status = [os.waitpid(child, os.WNOHANG) \
                                         for child in children]
 
-            # Only get successful returns
+            # Only get children who have exited 
             pid_status = [pidt for pidt in pid_status \
                                             if pidt != (0, 0)]
+
+            # Save successes
+            success = len([pidt for pidt in pid_status \
+                                            if pidt[-1] == 0])
+            successes += success
 
             # Reset the number of children PIDs
             children = [pid for pid in children \
@@ -154,6 +160,6 @@ if __name__ == '__main__':
     os.chdir(old_pwd)
 
     # Print finish message
-    sys.stdout.write('\n\tFinished {} downloads in {}\n'.\
-        format(total_links, 
+    sys.stdout.write('\n\tDownloaded {} out of {} files in {}\n'.\
+        format(successes, total_links, 
             str(datetime.timedelta(seconds=time.time()-start))))

@@ -16,7 +16,6 @@ def build_parser():
 if not URLS:
     # Write error if no URLs present
     sys.stderr.write('[Usage]: {} [URLs]+\n'.format(sys.argv[0]))
-    #sys.stderr.write('URLS: {}\n'.format(sys.argv))
     sys.exit(1)
 else:
     # Loop through and treat like URLs
@@ -31,6 +30,9 @@ else:
                 for line in r.iter_lines():
                     f.write(bytes(line))
         except:
+            # Delete the partial file
+            if os.path.exists(fname):
+                os.remove(fname)
             sys.exit(1)
 
     # Exit successfully
