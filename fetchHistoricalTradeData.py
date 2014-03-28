@@ -99,7 +99,12 @@ if __name__ == '__main__':
     downloaded = set()
     children = []           # PIDs of children
     pid_to_link = {}        # Map PID to link, i.e., URL
+    
+    # Get into the directory for 
+    # saving the data
     old_pwd = os.getcwd()
+    if not os.path.isdir(args.output_dir):
+        os.mkdir(args.output_dir)
     os.chdir(args.output_dir)
     start = time.time()
     total_links = len(links)
