@@ -4,6 +4,7 @@
 import argparse
 import datetime
 import logging
+from operator import itemgetter as ig
 import os 
 import subprocess
 import sys
@@ -106,6 +107,8 @@ if __name__ == '__main__':
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
     os.chdir(args.output_dir)
+
+    # Save some data and begin
     start = time.time()
     total_links = len(links)
     sys.stdout.write('Starting downloads w/ {} workers\n'.\
@@ -119,16 +122,22 @@ if __name__ == '__main__':
             # Potential TO DO:
             #   Re-add mistakes to pid_to_link 
             #   but avoid infinite loops
-            pid_status = [os.waitpid(child, 0) for child in children]
+            pid_status = [os.waitpid(child, os.WNOHANG) \
+                                        for child in children]
+
+            # Only get successful returns
+            pid_status = [pidt for pidt in pid_status \
+                                            if pidt != (0, 0)]
 
             # Reset the number of children PIDs
-            children = []
+            children = [pid for pid in children \
+                        if pid in map(ig(0), pid_status)]
 
         # If not too many workers, fork and download
         pid = os.fork()
 
         # Check for the parent or child
-        if pid:
+        if pid:                         # Parent process
             # Store child's PID
             children.append(pid)
             pid_to_link[pid] = link
