@@ -97,9 +97,9 @@ if __name__ == '__main__':
 
     # Create several forked processes 
     # to download all the links
-    downloaded = set()
     children = []           # PIDs of children
     pid_to_link = {}        # Map PID to link, i.e., URL
+
     
     # Get into the directory for 
     # saving the data
@@ -111,15 +111,17 @@ if __name__ == '__main__':
     # Save some data and begin
     start = time.time()
     total_links = len(links)
-    successes = 0
+    successes = 0               # Count number of successful DLs
+    failed = set()              # Keep a list of failed downloads
     sys.stdout.write('Starting downloads w/ {} workers\n'.\
                                         format(args.num_workers))
     for i, link in enumerate(links):
         # Log what's happening
         logging.info('[DLing #{}]: {}'.format(i+1, link)) 
 
-        # Check if we've maxed out the number of workers
-        if len(children) == args.num_workers:
+        # If we've maxed out the number of workers,
+        # wait for >= 1 children to finish their DL
+        while len(children) == args.num_workers:
             # Potential TO DO:
             #   Re-add mistakes to pid_to_link 
             #   but avoid infinite loops
@@ -131,13 +133,19 @@ if __name__ == '__main__':
                                             if pidt != (0, 0)]
 
             # Save successes
-            success = len([pidt for pidt in pid_status \
-                                            if pidt[-1] == 0])
-            successes += success
+            success = [pidt for pidt in pid_status \
+                                            if pidt[-1] == 0]
+            successes += len(success)
 
             # Reset the number of children PIDs
             children = [pid for pid in children \
                         if pid in map(ig(0), pid_status)]
+
+            # Save a list of failed processes
+            for pidt in [pidt for pidt in pid_status \
+                                    if pidt not in success]:
+                failed.add(pid_to_link[pidt[0]])
+                
 
         # If not too many workers, fork and download
         pid = os.fork()
@@ -158,6 +166,10 @@ if __name__ == '__main__':
 
     # Change back to start dir
     os.chdir(old_pwd)
+
+    # Log failed downloads
+    for fail in sorted(failed):
+        logging.debug('[Failed DL]: {}'.format(fail))
 
     # Print finish message
     sys.stdout.write('\n\tDownloaded {} out of {} files in {}\n'.\
